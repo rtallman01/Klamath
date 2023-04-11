@@ -19,6 +19,8 @@ t3 <- read_csv("FishJSATSTags_Team3_20230406.csv")
 
 t4 <- read_csv("FishJSATSTags_Team4_20230405.csv")
 
+lw <- read_csv("2023_live_well_scanner.csv", skip = 6)
+
 
 # combine databases together
 
@@ -39,6 +41,10 @@ t[226, 3] = "35DB"
 # look for duplicated PIT tag ids
 t$PIT[duplicated(t$PIT)]
 
-# D6820
+# D6820 -- > 2nd record should be D5BA4
+t[477, 2] = "D5BA4"  
+
 # AB738
 
+# DB3B0- typo should be D5EB0
+t[479, 2] = "D5EB0"
