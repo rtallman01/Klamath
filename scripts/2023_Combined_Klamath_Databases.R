@@ -27,6 +27,9 @@ lw <- read_csv("2023_live_well_scanner.csv", skip = 6)
 t <- rbind(t1, t2, t3, t4)
 
 
+# Errors ------------------------------------------------------------------
+
+
 # look for duplicated JSATS ids
 
 t$JSATS[duplicated(t$JSATS)]
@@ -37,14 +40,20 @@ t$JSATS[duplicated(t$JSATS)]
 
 t[226, 3] = "35DB"  
 
+# no more duplicate JSATs ids
+
 
 # look for duplicated PIT tag ids
+
 t$PIT[duplicated(t$PIT)]
 
 # D6820 -- > 2nd record should be D5BA4
 t[477, 2] = "D5BA4"  
 
-# AB738
+# AB738 -->  2nd record should be D5D5B
+t[702, 2] = "D5D5B"
 
 # DB3B0- typo should be D5EB0
 t[479, 2] = "D5EB0"
+
+# no more duplicate PIT tag #s
