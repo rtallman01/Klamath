@@ -84,8 +84,6 @@ t <- t%>%
 
 
 
-
-
 # Errors ------------------------------------------------------------------
 
 
@@ -116,3 +114,9 @@ t[702, 2] = "D5D5B"
 t[479, 2] = "D5EB0"
 
 # no more duplicate PIT tag #s
+
+
+
+# Format PIT tags with full identification code ---------------------------
+
+
