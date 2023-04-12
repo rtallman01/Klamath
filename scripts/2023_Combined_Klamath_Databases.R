@@ -2,6 +2,7 @@
 
 library(tidyverse)
 library(lubridate)
+library(stringi)
 # set working directory
 
 
@@ -22,9 +23,67 @@ t4 <- read_csv("FishJSATSTags_Team4_20230405.csv")
 lw <- read_csv("2023_live_well_scanner.csv", skip = 6)
 
 
+# Format Individual Databases ---------------------------------------------
+
+
+# t2
+
+# format t3 database so only the last 5 digits of the PIT tag number are recorded. This will match the format of the other databases
+
+t2$PIT <-stri_sub(t2$PIT, -5,-1)
+
+# remove sacrificed fish from 61 in t2
+t2 = t2[-61,]
+
+
+# t3
+
+# convert t3 times to characters. Later on I will convert them to POSIXct objects
+t3$TimeInAnes <- as.character(t3$TimeOutAnes, format = "%m/%d/%Y %H:%M:%S")
+t3$TimeOutAnes <- as.character(t3$TimeOutAnes, format = "%m/%d/%Y %H:%M:%S")
+t3$TimeOutSurgery <- as.character(t3$TimeOutSurgery, format = "%m/%d/%Y %H:%M:%S")
+t3$TimeRecovered <- as.character(t3$TimeRecovered, format = "%m/%d/%Y %H:%M:%S")
+
+
 # combine databases together
 
 t <- rbind(t1, t2, t3, t4)
+
+
+
+# Format Date and Time ----------------------------------------------------
+
+# only select the time stamps (remove the pre-determined date Excel generated)
+
+t$TimeInAnes <- sub('.*12/30/1899', '', t$TimeInAnes)
+t$TimeOutAnes <- sub('.*12/30/1899', '', t$TimeOutAnes)
+t$TimeOutSurgery <- sub('.*12/30/1899', '', t$TimeOutSurgery)
+t$TimeRecovered <- sub('.*12/30/1899', '', t$TimeRecovered)
+
+# only select the date time stamp (remove the pre-determined time Excel generated)
+t$DateRecorded <- stri_sub(t$DateRecorded, 1,8) 
+
+# combine the correct date with the correct time
+
+t$TimeInAnes <- paste(t$DateRecorded, t$TimeInAnes)
+t$TimeOutAnes <- paste(t$DateRecorded, t$TimeOutAnes)
+t$TimeOutSurgery <- paste(t$DateRecorded, t$TimeOutSurgery)
+t$TimeRecovered <- paste(t$DateRecorded, t$TimeRecovered)
+
+# Convert to POSIXct object
+
+t$TimeInAnes<- as.POSIXct(t$TimeInAnes,format='%m/%d/%Y %H:%M:%S', TZ= "ETc/GMT+8")
+t$TimeOutAnes<- as.POSIXct(t$TimeOutAnes,format='%m/%d/%Y %H:%M:%S', TZ= "ETc/GMT+8")
+t$TimeOutSurgery <- as.POSIXct(t$TimeOutSurgery,format='%m/%d/%Y %H:%M:%S', TZ= "ETc/GMT+8")
+t$TimeRecovered <- as.POSIXct(t$TimeRecovered,format='%m/%d/%Y %H:%M:%S', TZ= "ETc/GMT+8")
+
+# Remove DateRecorded column (no longer need since all time stamps have date and time included)
+
+t <- t%>% 
+  select(-c(DateRecorded))
+
+
+
 
 
 # Errors ------------------------------------------------------------------
