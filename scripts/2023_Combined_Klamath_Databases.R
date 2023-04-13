@@ -119,4 +119,49 @@ t[479, 2] = "D5EB0"
 
 # Format PIT tags with full identification code ---------------------------
 
+# identify the tag series
+
+lw$StartPIT <- stri_sub(lw$Tag_ID, 1,8) 
+unique(lw$StartPIT)
+
+# there are two PIT tag series
+
+#3DD.003D
+
+l1<- lw %>% 
+  filter(str_detect(Tag_ID, '3DD.003D')) %>% 
+  mutate(End_PIT= str_sub(Tag_ID, -5, -1)) %>% # select last 5 characters
+  select(Tag_ID,Release_location,End_PIT)
+
+#3DD.003E
+
+
+l2<- lw %>% 
+  filter(str_detect(Tag_ID, '3DD.003E')) %>% 
+  mutate(End_PIT= str_sub(Tag_ID, -5, -1)) %>%  # select last 5 characters
+  select(Tag_ID,Release_location,End_PIT)
+
+full_PIT<- rbind(l1,l2)
+
+# Join full_PIT to t using left join
+
+
+t$End_PIT <- t$PIT # create the same column in t data frame as the column in the full_PIT data frame
+
+joined_dat1 <- t %>% 
+  left_join(l1, by = c('End_PIT'))
+
+joined_full_dat <- t %>% 
+  left_join(full_PIT, by=('End_PIT'))
+
+# Double check for duplicated PIT tag numbers
+#joined_full_dat$FullPIT[duplicated(joined_full_dat$FullPIT)]
+
+# Re-format Database with Appropriate Column Names ------------------------
+
+Dat <- joined_full_dat %>% 
+  select(RecNum, Tag_ID, JSATS, TimeInAnes, TimeOutAnes, Mass, ForkLength, TimeOutSurgery, TagEffects, TimeRecovered, Notes, Bleeding, Tagger, Recorder)
+
+
+
 
