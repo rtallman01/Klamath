@@ -35,33 +35,53 @@ t2$PIT <-stri_sub(t2$PIT, -5,-1)
 # remove sacrificed fish from 61 in t2
 t2 = t2[-61,]
 
+# fix the data recorder for team 1 on the last day
+t1 <-t1 %>%
+  mutate(Recorder = case_when(DateRecorded == '4/6/2023 0:00:00' ~ 'CB',
+                              TRUE ~ "CE"))
 
-# t3
 
-# convert t3 times to characters. Later on I will convert them to POSIXct objects
-t3$TimeInAnes <- as.character(t3$TimeOutAnes, format = "%m/%d/%Y %H:%M:%S")
-t3$TimeOutAnes <- as.character(t3$TimeOutAnes, format = "%m/%d/%Y %H:%M:%S")
-t3$TimeOutSurgery <- as.character(t3$TimeOutSurgery, format = "%m/%d/%Y %H:%M:%S")
-t3$TimeRecovered <- as.character(t3$TimeRecovered, format = "%m/%d/%Y %H:%M:%S")
+
+# Date-time Data ----------------------------------------------------------
+
+# t1 and t2 are in the same format
+t_1_2 <- rbind(t1,t2)
+t_1_2$TimeInAnes <- sub('.*12/30/1899 ', '', t_1_2$TimeInAnes)
+t_1_2$TimeOutAnes <- sub('.*12/30/1899 ', '', t_1_2$TimeOutAnes)
+t_1_2$TimeOutSurgery <- sub('.*12/30/1899 ', '', t_1_2$TimeOutSurgery)
+t_1_2$TimeRecovered <- sub('.*12/30/1899 ', '', t_1_2$TimeRecovered)
+
+
+# Fix Date Recorded
+t_1_2$DateRecorded <- stri_sub(t_1_2$DateRecorded, 1,8)
+t_1_2$DateRecorded <- mdy(t_1_2$DateRecorded)
+t_1_2$DateRecorded <- as.character(t_1_2$DateRecorded, format = "%m/%d/%Y")
+
+
+
+
+# t3 and t4 are in the same format
+t_3_4 <-rbind(t3, t4)
+t_3_4$TimeInAnes <- sub('.*1899-12-30 ', '', t_3_4$TimeInAnes)
+t_3_4$TimeOutAnes <- sub('.*1899-12-30 ', '', t_3_4$TimeOutAnes)
+t_3_4$TimeOutSurgery <- sub('.*1899-12-30 ', '', t_3_4$TimeOutSurgery)
+t_3_4$TimeRecovered <- sub('.*1899-12-30 ', '', t_3_4$TimeRecovered)
+
+# Fix Date Recorded
+t_3_4$DateRecorded <- stri_sub(t_3_4$DateRecorded, 1,8) # select the first 8 characters
+t_3_4$DateRecorded <- ymd(t_3_4$DateRecorded)
+t_3_4$DateRecorded <- as.character(t_3_4$DateRecorded, format = "%m/%d/%Y")
+
 
 
 # combine databases together
 
-t <- rbind(t1, t2, t3, t4)
+t <- rbind(t_1_2, t_3_4)
 
 
 
 # Format Date and Time ----------------------------------------------------
 
-# only select the time stamps (remove the pre-determined date Excel generated)
-
-t$TimeInAnes <- sub('.*12/30/1899', '', t$TimeInAnes)
-t$TimeOutAnes <- sub('.*12/30/1899', '', t$TimeOutAnes)
-t$TimeOutSurgery <- sub('.*12/30/1899', '', t$TimeOutSurgery)
-t$TimeRecovered <- sub('.*12/30/1899', '', t$TimeRecovered)
-
-# only select the date time stamp (remove the pre-determined time Excel generated)
-t$DateRecorded <- stri_sub(t$DateRecorded, 1,8) 
 
 # combine the correct date with the correct time
 
@@ -77,14 +97,9 @@ t$TimeOutAnes<- as.POSIXct(t$TimeOutAnes,format='%m/%d/%Y %H:%M:%S', TZ= "ETc/GM
 t$TimeOutSurgery <- as.POSIXct(t$TimeOutSurgery,format='%m/%d/%Y %H:%M:%S', TZ= "ETc/GMT+8")
 t$TimeRecovered <- as.POSIXct(t$TimeRecovered,format='%m/%d/%Y %H:%M:%S', TZ= "ETc/GMT+8")
 
-# Remove DateRecorded column (no longer need since all time stamps have date and time included)
-
-t <- t%>% 
-  select(-c(DateRecorded))
 
 
-
-# Errors ------------------------------------------------------------------
+# Duplicate IDs ------------------------------------------------------------------
 
 
 # look for duplicated JSATS ids
@@ -105,62 +120,181 @@ t[226, 3] = "35DB"
 t$PIT[duplicated(t$PIT)]
 
 # D6820 -- > 2nd record should be D5BA4
-t[477, 2] = "D5BA4"  
+t[476, 2] = "D5BA4"  
 
 # AB738 -->  2nd record should be D5D5B
-t[702, 2] = "D5D5B"
+t[701, 2] = "D5D5B"
 
-# DB3B0- typo should be D5EB0
-t[479, 2] = "D5EB0"
+
 
 # no more duplicate PIT tag #s
 
 
+# Incorrectly entered PIT tag numbers
+
+
+#	D609A should be D690A
+t[51, 2] = "D690A" 
+
+#A9E7 should be AA9E7
+t[178, 2] = "AA9E7" 
+
+#D64B should be D64BC
+t[188, 2] = "D64BC" 
+
+#9DOF should be B9D0F
+t[244,2] = "B9D0F"
+
+#D5EFS should be D5EF5
+t[254,2] = "D5EF5"
+
+#D53B0 should be D5EB0 
+t[478,2] = "D5EB0"
+
+#AB370 should be AB379
+t[520,2] = "AB379"
+
+#AB25D should be AB26D
+t[600,2] = "AB26D"
 
 # Format PIT tags with full identification code ---------------------------
 
 # identify the tag series
 
-lw$StartPIT <- stri_sub(lw$Tag_ID, 1,8) 
+lw$StartPIT <- stri_sub(lw$Tag_ID, 1,9) 
 unique(lw$StartPIT)
 
-# there are two PIT tag series
+# there are three PIT tag series
 
-#3DD.003D
+#3DD.003D6
 
 l1<- lw %>% 
-  filter(str_detect(Tag_ID, '3DD.003D')) %>% 
+  filter(str_detect(Tag_ID, '3DD.003D6')) %>% 
   mutate(End_PIT= str_sub(Tag_ID, -5, -1)) %>% # select last 5 characters
-  select(Tag_ID,Release_location,End_PIT)
+  select(Tag_ID, Release_location, StartPIT, End_PIT)
 
 #3DD.003E
 
-
 l2<- lw %>% 
-  filter(str_detect(Tag_ID, '3DD.003E')) %>% 
+  filter(str_detect(Tag_ID, '3DD.003E1')) %>% 
   mutate(End_PIT= str_sub(Tag_ID, -5, -1)) %>%  # select last 5 characters
-  select(Tag_ID,Release_location,End_PIT)
+  select(Tag_ID, Release_location, StartPIT, End_PIT)
 
-full_PIT<- rbind(l1,l2)
+#3DD.003D8
+l3<- lw %>% 
+  filter(str_detect(Tag_ID, '3DD.003D8')) %>% 
+  mutate(End_PIT= str_sub(Tag_ID, -5, -1)) %>%  # select last 5 characters
+  select(Tag_ID, Release_location, StartPIT, End_PIT)
+
+#3DD.003D8
+
+full_PIT<- rbind(l1,l2,l3)
 
 # Join full_PIT to t using left join
 
 
 t$End_PIT <- t$PIT # create the same column in t data frame as the column in the full_PIT data frame
 
-joined_dat1 <- t %>% 
-  left_join(l1, by = c('End_PIT'))
+# Join the full_pit with our complete database t using left_join by joining End_PIT columns in both dataframes
 
 joined_full_dat <- t %>% 
   left_join(full_PIT, by=('End_PIT'))
 
-# Double check for duplicated PIT tag numbers
-#joined_full_dat$FullPIT[duplicated(joined_full_dat$FullPIT)]
+
+# Double check for duplicated PIT tag numbers in the full list
+
+# 1st check
+joined_full_dat$Tag_ID[duplicated(joined_full_dat$Tag_ID)]
+
+# Recheck JSATS tagIDs for duplicates
+joined_full_dat$JSATS[duplicated(joined_full_dat$JSATS)]
+
+# no duplicates
 
 # Re-format Database with Appropriate Column Names ------------------------
 
 Dat <- joined_full_dat %>% 
-  select(RecNum, Tag_ID, JSATS, TimeInAnes, TimeOutAnes, Mass, ForkLength, TimeOutSurgery, TagEffects, TimeRecovered, Notes, Bleeding, Tagger, Recorder)
+  select(RecNum, 
+         HexID_PIT_ID=Tag_ID, 
+         JSATS, 
+         TimeInAnes, 
+         TimeOutAnes, 
+         Mass, 
+         ForkLength, 
+         TimeOutSurgery, 
+         TagEffects, 
+         TimeRecovered, 
+         Notes, 
+         Bleeding, 
+         Tagger, 
+         Recorder,
+         Release_location)
+
+
+# Check Tag Effects values. There should only be 0 L or D. L for live tag. D for dead tag
+
+unique(Dat$TagEffects) # only values are 0, D, L
+
+# Check release location only has three values: Williamson, Wood, OSU
+unique(Dat$Release_location)
+
+# Williamson was spelled wrong several times
+# values:  "williamson"  "wood"        "osu"         "willismson"  "wiilliamson"
+
+Dat2 <-Dat %>%
+  mutate(Release_location = case_when(Release_location == 'willismson' ~ 'Williamson',
+                                      Release_location == 'wiilliamson' ~ 'Williamson',
+                                      Release_location == 'osu' ~ "OSU",
+                                      Release_location == 'wood' ~ "Wood",
+                                      Release_location == 'williamson' ~ "Williamson"))
+
+
+# double check release location values
+unique(Dat2$Release_location)
+
+
+# double check data recorders used a consistent format
+unique(Dat2$Recorder)
+
+# check for surgeons (there should only be 4 values)
+unique(Dat2$Tagger)
+
+
+# Identify which PIT ID number was scanned at the livewells that I do not have a record for in the databases
+
+lw$Tag_ID[!lw$Tag_ID %in% Dat2$HexID_PIT_ID]
+
+# "3DD.003D6D6616"
+# Have no record of it and all JSATS fish have an associated JSATS tag
+
+# reorder record number
+Dat2$RecNum<-1:nrow(Dat2)
+
+
+
+# Number of Fish Released -------------------------------------------------
+
+table(Dat2['Release_location'])
+
+
+# Release_location
+# OSU   Williamson    Wood 
+# 31        350        352
+
+
+
+# write a csv file to save for my own records and a txt file for Mark
+
+write_csv(Dat2, "C:/Users/Rachelle/Documents/RProjects/Klamath/data_output\\2023_Full_Database.csv")
+
+# For ODFW
+write.table(Dat2, "C:/Users/Rachelle/Documents/RProjects/Klamath/data_output\\2023_Full_Database.txt", sep=",", row.names = F)
+
+
+
+
+
+
 
 
 
