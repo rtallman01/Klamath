@@ -336,12 +336,3 @@ write_csv(Dat2, "C:/Users/Rachelle/Documents/RProjects/Klamath/data_output\\2023
 # For ODFW
 write.table(Dat2, "C:/Users/Rachelle/Documents/RProjects/Klamath/data_output\\2023_Full_Database.txt", sep=",", row.names = F)
 
-
-
-
-
-
-
-
-
-
