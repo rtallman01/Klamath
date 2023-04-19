@@ -28,12 +28,14 @@ lw <- read_csv("2023_live_well_scanner.csv", skip = 6)
 
 # t2
 
-# format t3 database so only the last 5 digits of the PIT tag number are recorded. This will match the format of the other databases
+# format t2 database so only the last 5 digits of the PIT tag number are recorded. This will match the format of the other databases
 
 t2$PIT <-stri_sub(t2$PIT, -5,-1)
 
-# remove sacrificed fish from 61 in t2
-t2 = t2[-61,]
+# remove sacrificed fish from t2
+t2 <- t2 %>% 
+  filter(!(is.na(PIT) & is.na(JSATS)))
+
 
 # fix the data recorder for team 1 on the last day
 t1 <-t1 %>%
@@ -108,9 +110,11 @@ t$JSATS[duplicated(t$JSATS)]
 
 # only JSATS duplicate value is for 35D8
 
-# team 1 record number 228 should be 35DB
+# team 1 record 35D8 should be 35DB
 
-t[226, 3] = "35DB"  
+t <- t %>% 
+  mutate(JSATS = case_when(JSATS == "35D8" & PIT =="D63D8" ~ "35DB",
+                           TRUE ~ JSATS))
 
 # no more duplicate JSATs ids
 
@@ -119,11 +123,16 @@ t[226, 3] = "35DB"
 
 t$PIT[duplicated(t$PIT)]
 
+# D6820 and AB378
+
 # D6820 -- > 2nd record should be D5BA4
-t[476, 2] = "D5BA4"  
 
 # AB738 -->  2nd record should be D5D5B
-t[701, 2] = "D5D5B"
+
+t <- t %>% 
+  mutate(PIT = case_when(JSATS == "7A36" & PIT =="D6820" ~ "D5BA4",
+                         JSATS == "341A" & PIT == "AB738" ~ "D5D5B",
+                           TRUE ~ PIT))
 
 
 
@@ -133,29 +142,36 @@ t[701, 2] = "D5D5B"
 # Incorrectly entered PIT tag numbers
 
 
+
+
 #	D609A should be D690A
-t[51, 2] = "D690A" 
 
-#A9E7 should be AA9E7
-t[178, 2] = "AA9E7" 
+# A9E7 should be AA9E7
 
-#D64B should be D64BC
-t[188, 2] = "D64BC" 
+# D64B should be D64BC
 
-#9DOF should be B9D0F
-t[244,2] = "B9D0F"
+# 9DOF should be B9D0F
 
-#D5EFS should be D5EF5
-t[254,2] = "D5EF5"
+# D5EFS should be D5EF5
 
-#D53B0 should be D5EB0 
-t[478,2] = "D5EB0"
+# D53B0 should be D5EB0 
 
-#AB370 should be AB379
-t[520,2] = "AB379"
+# AB370 should be AB379
 
-#AB25D should be AB26D
-t[600,2] = "AB26D"
+# AB25D should be AB26D
+
+
+t <- t %>% 
+  mutate(PIT = case_when(JSATS == "31A8" & PIT == "D609A" ~ "D690A",
+                         JSATS == "815A" & PIT == "A9E7" ~ "AA9E7",
+                         JSATS == "80AA" & PIT == "D64B" ~ "D64BC",
+                         JSATS == "31DA" & PIT == "9D0F" ~ "B9D0F",
+                         JSATS == "7B50" & PIT == "D5EFS" ~ "D5EF5",
+                         JSATS == "7934" & PIT == "D53B0" ~ "D5EB0",
+                         JSATS == "7A6D" & PIT == "AB370" ~ "AB379",
+                         JSATS == "3259" & PIT == "AB25D" ~ "AB26D",
+                         TRUE ~ PIT))
+
 
 # Format PIT tags with full identification code ---------------------------
 
@@ -170,14 +186,14 @@ unique(lw$StartPIT)
 
 l1<- lw %>% 
   filter(str_detect(Tag_ID, '3DD.003D6')) %>% 
-  mutate(End_PIT= str_sub(Tag_ID, -5, -1)) %>% # select last 5 characters
+  mutate(End_PIT= str_sub(Tag_ID, -5, -1)) %>% # select last 5 characters of the PIT tag number
   select(Tag_ID, Release_location, StartPIT, End_PIT)
 
-#3DD.003E
+#3DD.003E1
 
 l2<- lw %>% 
   filter(str_detect(Tag_ID, '3DD.003E1')) %>% 
-  mutate(End_PIT= str_sub(Tag_ID, -5, -1)) %>%  # select last 5 characters
+  mutate(End_PIT= str_sub(Tag_ID, -5, -1)) %>%
   select(Tag_ID, Release_location, StartPIT, End_PIT)
 
 #3DD.003D8
@@ -280,6 +296,36 @@ table(Dat2['Release_location'])
 # Release_location
 # OSU   Williamson    Wood 
 # 31        350        352
+
+
+
+
+# Check for additional human errors by order columns in ascending and descending values
+
+d <- Dat2 %>% 
+  arrange(ForkLength)
+
+e <- Dat2 %>% 
+  arrange(Mass)
+
+
+# errors with Record # 239, JSATS = 342E, mass and fork length a way too small to be correct. Replace with NA value
+
+# errors with Record # 236, JSATS= 34BB. Fork length is too small to be correct. Replace with NA value.
+
+# errors with Record number 237, JSATS = 3488. Mass is too high.
+
+Dat2 <- Dat2 %>% 
+  mutate(ForkLength = case_when(JSATS == "342E" ~ NA_real_,
+                                JSATS == "34BB" ~ NA_real_, 
+                                TRUE ~ ForkLength),
+         Mass = case_when(JSATS == "342E" ~ NA_real_,
+                          JSATS == "3488" ~ NA_real_,
+                          TRUE ~ Mass))
+
+
+
+
 
 
 
