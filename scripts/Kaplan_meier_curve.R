@@ -11,6 +11,7 @@ library(ggsurvfit)
 library(survival)
 library(tidyverse)
 library(ggfortify)
+library(survminer)
 
 
 # Identify Tag Effects Code -----------------------------------------------
@@ -130,6 +131,7 @@ kp_dat$Batt_type <- as.factor(kp_dat$Batt_type)
 # Surv function creates survival object which is the response variable
 Y = Surv(kp_dat$Time_days, kp_dat$Event == 1)
 
+
 # Stratify by Battery Type variable:
 kmfit = survfit(Y ~ kp_dat$Batt_type)
 
@@ -141,10 +143,57 @@ summary(kmfit, times = c(seq(0, 200, by = 5)))
 
 # Plotting Survival Curves ------------------------------------------------
 
-autoplot(kmfit) +
-  xlab("Battery Life (Days)") +
+batt_plot <-autoplot(kmfit, surv.size = 1.2) +
+  guides(fill = "none")+
+  xlab("Days") +
   ylab("Percent Detected (%)") +
+  labs(color='Battery Type')  +
+  theme(legend.title = "Battery Type") +
   theme_bw() +
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank())
+  theme(
+    legend.position = c(.85, 0.2),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    axis.text=element_text(size= 14),
+    axis.title = element_text(size=16),
+    legend.box.background = element_rect(color="black", size= 0.8),
+    legend.title = element_text(size= 14),
+    legend.text = element_text(size= 12)) 
   
+  
+
+# Combine with Cumulative Detection Data ----------------------------------
+
+  
+
+comb_plot <-autoplot(kmfit, surv.size = 1.5) +
+  guides(fill = "none")+
+  xlab("Days") +
+  ylab("Percent Detected (%)") +
+  labs(color='Battery Type')  +
+  theme(legend.title = "Battery Type") +
+  theme_bw() +
+  theme(
+    legend.position = c(.85, 0.2),
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(),
+    axis.text=element_text(size= 14),
+    axis.title = element_text(size=16),
+    legend.box.background = element_rect(color="black", size= 0.8),
+    legend.title = element_text(size= 14),
+    legend.text = element_text(size= 12)) +
+  geom_step(data = det_cum_sum2, aes(Days,cum_per,group = Site_name, color= Site_name), size= 1.2)+
+  facet_wrap(~Site_name) + # create four separate plots based on site name
+  ylab("Cummulative Number of Tags Detected") +
+  theme_bw() +
+  labs(color = "Site") +
+  scale_color_discrete(labels=c('Wood River', 'Williamson River', 'US Link River', 'DS Link River'))+
+  theme(legend.position = "none",
+        axis.text=element_text(size= 14),
+        axis.title = element_text(size=16),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        panel.spacing = unit(2, "lines"), # change spacing between facets
+        strip.text.x = element_text(size = 15))
+
+
