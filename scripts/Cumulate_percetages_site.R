@@ -4,6 +4,7 @@
 
 library(tidyverse)
 library(lubridate)
+library(RColorBrewer)
 
 # Read in compressed detections data file
 
@@ -158,15 +159,20 @@ d4 <-d3 %>%
 # Organize Data for Cumulative Sums ---------------------------------------
 
 
-d4 <- d3 %>% 
-  group_by(HexID, Site_name) %>% 
-  arrange(StartTime) %>% 
-  slice(n()) %>%  # take the last detection at that site for that tag code
-  add_count(Site_name) %>%  # tally of the tag code at that site. It should be once. 
-  ungroup() %>% 
-  mutate(Date = as.Date(EndTime)) # remove time stamp of detection and keep the date
+#d4 <- d3 %>% 
+ # group_by(HexID, Site_name) %>% 
+  # arrange(StartTime) %>% 
+  # slice(n()) %>%  # take the last detection at that site for that tag code
+  # add_count(Site_name) %>%  # tally of the tag code at that site. It should be once. 
+  # ungroup() %>% 
+  # mutate(Date = as.Date(EndTime)) # remove time stamp of detection and keep the date
   
+# Add in the release date
 
+d4$ReleaseDate <- as.Date("2022-04-04")
+d4$Days <- difftime(d4$StartTime, d4$ReleaseDate, units = "days")
+
+d4$Days <- as.numeric(d4$Days)
 
 d5 <- d4 %>% 
   group_by(HexID, Site_name) %>% 
@@ -177,7 +183,7 @@ d5 <- d4 %>%
   group_by(HexID, Site_name, Date) %>% 
   add_count(Site_name) %>%  # tally of the tag code at that site. It should be once. 
   ungroup() %>% 
-  select(HexID, Det_num, Site_name, Release_location, Date , n)
+  select(HexID, Det_num, Site_name, Release_location, Date , n, Days)
   
 
 # Calculating Cumulative Sums percentages based on Site Name and Date
@@ -217,8 +223,8 @@ det_cum_sum2 <- det_cum_sum %>%
 
 
 
-ggplot(det_cum_sum2,
-       aes(x= Date, y=cum_per, group= Site_name, color= Site_name))+
+perc_plot <-ggplot(det_cum_sum2,
+       aes(x= Days, y=cum_per, group= Site_name, color= Site_name))+
   geom_step(size= 1.8)+
   facet_wrap(~Site_name) + # create four separate plots based on site name
   ylab("Cummulative Number of Tags Detected") +
@@ -230,6 +236,8 @@ ggplot(det_cum_sum2,
         axis.title = element_text(size=16),
         panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
-        panel.spacing = unit(2, "lines"),
-        strip.text.x = element_text(size = 15)) # change spacing between facets
+        panel.spacing = unit(2, "lines"), # change spacing between facets
+        strip.text.x = element_text(size = 15))  # change face label size
+
+
 
